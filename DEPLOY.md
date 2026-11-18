@@ -1,4 +1,4 @@
-# 部署说明：knowledge-work-plugins（GitHub）
+# 部署说明：kwp-mirror（knowledge-work-plugins 的 GitHub 镜像）
 
 > 上游仓库：<https://github.com/anthropics/knowledge-work-plugins>（Apache-2.0，main 分支）
 > 本目录是一个**已完成配置、可直接 push 的部署副本**，不是代码构建产物。
@@ -9,7 +9,7 @@
 
 | 项 | 实际值 |
 |---|---|
-| 目标仓库 | <https://github.com/clarkcai1919-ops/kwp-mirror-new>（public，默认分支 main） |
+| 目标仓库 | <https://github.com/clarkcai1919-ops/kwp-mirror>（public，默认分支 main） |
 | 首个 commit | `ef7bf2d` — 1287 个文件，本地 HEAD 与远程 HEAD 一致 |
 | 认证方式 | SSH ed25519（`~/.ssh/id_ed25519`，无 passphrase），公钥已挂到 GitHub 账号 |
 | CI 结果 | `Validate Plugins` 在 push 后 30 秒内跑完 → **success** |
@@ -17,14 +17,14 @@
 
 第 5 节三项必补项的完成情况：
 
-- [x] **建仓权限** — `clarkcai1919-ops/kwp-mirror-new`，空仓库创建（未勾 README，因此无需 `pull --rebase`）
+- [x] **建仓权限** — `clarkcai1919-ops/kwp-mirror`，空仓库创建（未勾 README，因此无需 `pull --rebase`）
 - [x] **push 权限** — SSH 认证通过：`Hi clarkcai1919-ops! You've successfully authenticated`
-- [x] **账号/仓库名确认** — owner=`clarkcai1919-ops`，repo=`kwp-mirror-new`，可见性 Public
+- [x] **账号/仓库名确认** — owner=`clarkcai1919-ops`，repo=`kwp-mirror`，可见性 Public
 
 尚未做（不阻塞上线）：
 
 - `claude` CLI 本机未安装，客户端侧 `plugin marketplace add` 未实测；可用 npm 安装后补验
-- `marketplace.json` 的 `name` 仍为 `knowledge-work-plugins`（与上游同名），是否改成本地标识（如 `kwp-mirror`）待定
+- **已处理**：`marketplace.json` 的 `name` 已改为 `kwp-mirror`，`owner.name` 改为 `clarkcai1919-ops`，与官方市场区分开，两者可同时安装
 
 ---
 
@@ -53,8 +53,8 @@
 2. **校验侧入口**：`.github/workflows/validate-plugins.yml` → 调用 `.github/scripts/validate-plugins.mjs`
 3. **客户端安装命令**（部署成功后别人这样用）：
    ```bash
-   claude plugin marketplace add <你的账号>/knowledge-work-plugins
-   claude plugin install sales@knowledge-work-plugins
+   claude plugin marketplace add <你的账号>/kwp-mirror
+   claude plugin install sales@kwp-mirror
    ```
 
 ### 依赖项
@@ -80,16 +80,16 @@
 # 1) 浏览器打开 https://github.com/anthropics/knowledge-work-plugins → 右上角 Fork → 选 clarkcai1919-ops
 # 2) 把本目录（含 CI 改动）推上去，覆盖 fork 的 main
 cd E:\AI2026\workbuddy\deploy\knowledge-work-plugins
-git remote add origin https://github.com/clarkcai1919-ops/knowledge-work-plugins.git
+git remote add origin https://github.com/clarkcai1919-ops/kwp-mirror.git
 git push -u origin main --force
 ```
 
 ### 路径 B：新建空仓库（不想保留 fork 关系时）
 
 ```bash
-# 1) 浏览器 https://github.com/new → 名称 knowledge-work-plugins → Public → 不要勾 README/LICENSE
+# 1) 浏览器 https://github.com/new → 名称 kwp-mirror → Public → 不要勾 README/LICENSE
 cd E:\AI2026\workbuddy\deploy\knowledge-work-plugins
-git remote add origin https://github.com/clarkcai1919-ops/knowledge-work-plugins.git
+git remote add origin https://github.com/clarkcai1919-ops/kwp-mirror.git
 git push -u origin main
 ```
 
@@ -106,10 +106,10 @@ claude plugin install productivity@knowledge-work-plugins
 
 | # | 验证项 | 命令 / 操作 | 通过标准 |
 |---|---|---|---|
-| 1 | 清单可匿名读取 | `curl -s -o /dev/null -w "%{http_code}" https://raw.githubusercontent.com/<owner>/knowledge-work-plugins/main/.claude-plugin/marketplace.json` | `200`（私有仓库会是 404） |
+| 1 | 清单可匿名读取 | `curl -s -o /dev/null -w "%{http_code}" https://raw.githubusercontent.com/<owner>/kwp-mirror/main/.claude-plugin/marketplace.json` | `200`（私有仓库会是 404） |
 | 2 | 清单结构合法 | `node .github/scripts/validate-plugins.mjs` | 输出 `✔ 校验通过。`，退出码 0 |
 | 3 | CI 真的在跑 | 仓库页 → Actions → **Validate Plugins** | 最新 run 是绿色 ✅（若显示 no runs，检查默认分支名是否 `main`、Actions 是否被 Disabled） |
-| 4 | 客户端能装 | `claude plugin marketplace add <owner>/knowledge-work-plugins` 然后 `claude plugin marketplace list`、`claude plugin install sales@knowledge-work-plugins` | marketplaces 列表里出现 `knowledge-work-plugins`；安装后 `/sales:call-prep` 等命令可见 |
+| 4 | 客户端能装 | `claude plugin marketplace add <owner>/kwp-mirror` 然后 `claude plugin marketplace list`、`claude plugin install sales@kwp-mirror` | marketplaces 列表里出现 `kwp-mirror`；安装后 `/sales:call-prep` 等命令可见 |
 | 5 | 插件真的生效 | 新开一个 Claude Code 会话，输入 `/sales:account-research` | 命令能被补全并执行 |
 
 **一次性验证脚本**（把 owner 换成你的账号）：
@@ -117,8 +117,8 @@ claude plugin install productivity@knowledge-work-plugins
 ```bash
 OWNER=clarkcai1919-ops
 curl -s -o /dev/null -w "raw marketplace.json -> %{http_code}\n" \
-  "https://raw.githubusercontent.com/$OWNER/knowledge-work-plugins/main/.claude-plugin/marketplace.json"
-claude plugin marketplace add "$OWNER/knowledge-work-plugins" && claude plugin marketplace list
+  "https://raw.githubusercontent.com/$OWNER/kwp-mirror/main/.claude-plugin/marketplace.json"
+claude plugin marketplace add "$OWNER/kwp-mirror" && claude plugin marketplace list
 ```
 
 **本地已验证结果**（我在本机跑过的）：
@@ -146,7 +146,7 @@ claude plugin marketplace add "$OWNER/knowledge-work-plugins" && claude plugin m
 |---|---|---|
 | **创建 / Fork 仓库的权限** | 连接器调 `POST /repos/anthropics/knowledge-work-plugins/forks` 和 `POST /user/repos` 均返回 `403 Resource not accessible by integration` | 在 GitHub App 授权页给连接器加 `Administration: write` + `Contents: write`；或按路径 A/B 用网页手动建仓 |
 | **对目标仓库的 push 权限（contents: write）** | 当前 git 无 credential，本机也没有 `gh` CLI | 建仓后用 HTTPS + PAT（`repo` 或 fine-grained `Contents: Read and write`）或 SSH key push；或 `winget install GitHub.cli && gh auth login` |
-| **目标账号 / 仓库名确认** | 当前连接器身份是 `clarkcai1919-ops`（0 个公开仓库） | 告诉我最终用 `clarkcai1919-ops/knowledge-work-plugins` 还是别的组织/名字 |
+| **目标账号 / 仓库名确认** | 当前连接器身份是 `clarkcai1919-ops`（0 个公开仓库） | 告诉我最终用 `clarkcai1919-ops/kwp-mirror` 还是别的组织/名字 |
 
 ### 按需补（不影响首次部署）
 | 项 | 何时需要 |
@@ -154,7 +154,7 @@ claude plugin marketplace add "$OWNER/knowledge-work-plugins" && claude plugin m
 | Anthropic API Key / WIF 联邦身份 | 仅当你想恢复上游的 AI 策略扫描（`scan-plugins`）。个人仓库没有这套联邦规则，跑不了 |
 | `workflow` scope 的 PAT | 若用 `gh` 推送包含 `.github/workflows/` 的提交，classic PAT 必须带 `workflow` scope，否则报 `refusing to allow a Personal Access Token to create or update workflow` |
 | 私有仓库 + 访问令牌 | 若仓库设为 Private，安装方必须先 `gh auth login`，`claude plugin marketplace add` 才能读到清单 |
-| 仓库命名区分 | 若想和上游同时装，建议改名（如 `kwp-mirror`），否则两个 `knowledge-work-plugins` 市场同名容易混 |
+| 仓库命名区分 | 已采纳：市场标识为 `kwp-mirror`，与上游 `knowledge-work-plugins` 区分开，两个市场可共存 |
 | MCP 端点的真实 URL | 30 个 `http/sse` 服务器 url 为空占位（gmail、google calendar、snowflake 等），接哪家就填哪家 |
 
 ---
