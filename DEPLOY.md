@@ -116,6 +116,8 @@ claude plugin marketplace add "$OWNER/knowledge-work-plugins" && claude plugin m
 
 ## 5. 还需要你补的权限 / 信息
 
+> **手把手步骤见 [`SETUP-STEPS.md`](./SETUP-STEPS.md)**：三项必补项的逐条点击路径、完整命令、验收标准和报错对照表。本节只列清单。
+
 ### 必须补（否则推不上去）
 | 缺什么 | 具体表现 | 怎么补 |
 |---|---|---|
