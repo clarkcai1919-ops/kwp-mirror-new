@@ -1,0 +1,80 @@
+name: Validate Plugins
+
+# 本文件是「部署镜像」专用的校验入口，替代上游 4 个与 Anthropic 内部基础设施
+# 绑定的 workflow（scan-plugins / bump-plugin-shas / revert-failed-bumps /
+# close-external-prs）。上游那些需要 Anthropic WIF 联邦身份和私有 composite
+# action，在 fork / 个人仓库里必然 403，因此本仓库把它们降级为“仅上游仓库执行”。
+#
+# 这一个 workflow 只做本地、确定性、零密钥的校验：
+#   - marketplace.json 结构、字段、name 唯一性
+#   - 本地插件目录 / plugin.json / SKILL.md frontmatter 完整性
+#   - 外部条目是否锁定 40 位 sha
+#   - .mcp.json 合法性、误提交的密钥特征
+#
+# 它不需要任何 Secret，fork 后立即可跑，可作为 main 的必过检查。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_claude_cli:
+        description: 额外用官方 CLI 跑 `claude plugin validate`（较慢，约 2-3 分钟）
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-plugins-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate marketplace and plugin layout
+        run: node .github/scripts/validate-plugins.mjs
+
+      # 官方 CLI 的二次校验：验证 plugin.json / marketplace 是否符合 Claude
+      # 当前 schema。默认关闭，避免每次 PR 都装一遍 CLI；发布前手动跑一次即可。
+      - name: Setup Claude CLI (optional)
+        if: inputs.run_claude_cli
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Validate each local plugin with official CLI (optional)
+        if: inputs.run_claude_cli
+        run: |
+          set -euo pipefail
+          failed=0
+          # 只校验仓库内自带的插件；外部条目是别的仓库，这里没有文件可校验。
+          for dir in $(node -e '
+            const m = require("./.claude-plugin/marketplace.json");
+            m.plugins.filter(p => typeof p.source === "string")
+                     .forEach(p => console.log(p.source.replace(/^\.\//, "")));
+          '); do
+            echo "::group::claude plugin validate $dir"
+            if claude plugin validate "$dir"; then
+              echo "OK $dir"
+            else
+              echo "::error::claude plugin validate 失败：$dir"
+              failed=$((failed + 1))
+            fi
+            echo "::endgroup::"
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::$failed 个插件未通过官方 CLI 校验。"
+            exit 1
+          fi
