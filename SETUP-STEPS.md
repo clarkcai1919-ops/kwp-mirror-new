@@ -1,29 +1,29 @@
 # SETUP-STEPS — 三项必补项的设置步骤
 
-> 配套 [`DEPLOY.md`](./DEPLOY.md) 第 5 节。DEPLOY.md 说"补什么"，本文件说"怎么点、每条命令是什么、报错怎么判"。
+> 配套 [`DEPLOY.md`](./DEPLOY.md) 第 5 节。DEPLOY.md 说"补什么"，本文件说"怎么点、每条命令是什么、报错怎么判"。  
 > 读完照着做，全程约 15 分钟。每一步都有**验收标准**，没达到就别往下走。
 
 ## 本机实测基线（2026-11-18，命令已跑过）
 
-| 项 | 实测值 | 对步骤的影响 |
-|---|---|---|
-| git | 2.55.0.windows.3（PortableGit） | 支持 `--initial-branch`、GCM |
-| credential.helper | `manager`（system 级，来自 PortableGit 的 gitconfig） | **方案 1 零配置可 push** |
-| SSH 公钥 | 无 | 走方案 2 需先生成 |
-| gh CLI | 无（winget 1.29 可用） | 不需要 gh，本文件全用原生 git |
-| node / npm | v22.22.2 / 10.9.7 | 可本地跑校验器 |
-| claude CLI | **未安装** | 验收第 4 步需先装或跳过（见 §4） |
-| 本地仓库 | `E:\AI2026\workbuddy\deploy\knowledge-work-plugins`，`main`，1287 文件，孤儿提交 | 决定了方案 A/B 的 push 方式不同 |
+| 项                 | 实测值                                                                     | 对步骤的影响                    |
+| ----------------- | ----------------------------------------------------------------------- | ------------------------- |
+| git               | 2.55.0.windows.3（PortableGit）                                           | 支持 `--initial-branch`、GCM |
+| credential.helper | `manager`（system 级，来自 PortableGit 的 gitconfig）                          | **方案 1 零配置可 push**        |
+| SSH 公钥            | 无                                                                       | 走方案 2 需先生成                |
+| gh CLI            | 无（winget 1.29 可用）                                                       | 不需要 gh，本文件全用原生 git        |
+| node / npm        | v22.22.2 / 10.9.7                                                       | 可本地跑校验器                   |
+| claude CLI        | **未安装**                                                                 | 验收第 4 步需先装或跳过（见 §4）       |
+| 本地仓库              | `E:\AI2026\workbuddy\deploy\knowledge-work-plugins`，`main`，1287 文件，孤儿提交 | 决定了方案 A/B 的 push 方式不同     |
 
 ---
 
 ## 第 0 步（30 秒）：确认你的 GitHub 账号
 
-浏览器打开 → https://github.com/settings/profile
+浏览器打开 → <https://github.com/settings/profile>
 
 - 页面上方 **Public profile** 区的 **Username** 就是你的账号名。记下来。
 - 下面所有 `<OWNER>` 都替换成它。
-- 顺带确认：https://github.com/settings/organizations 看你属于哪些组织（决定第 3 项选个人还是组织）。
+- 顺带确认：<https://github.com/settings/organizations> 看你属于哪些组织（决定第 3 项选个人还是组织）。
 
 > ⚠️ 当前 GitHub 连接器的授权身份是 `clarkcai1919-ops`。**以你浏览器登录的号为准**——如果不是同一个号，push 会报 404 / 403。
 
@@ -33,12 +33,12 @@
 
 ## 第 1 项：创建仓库的权限（三选一）
 
-> 背景：连接器调 `POST /user/repos` 和 `POST /repos/anthropics/knowledge-work-plugins/forks` 都是 `403 Resource not accessible by integration`，因为授权里没有 `Administration: write`。所以这一步必须你在网页做。
-> 想让连接器代做：去 https://github.com/settings/installations → 找到该 App → Configure → 把 **Administration** 与 **Contents** 都改成 **Read and write** → Save。改完我可以接管后续。
+> 背景：连接器调 `POST /user/repos` 和 `POST /repos/anthropics/knowledge-work-plugins/forks` 都是 `403 Resource not accessible by integration`，因为授权里没有 `Administration: write`。所以这一步必须你在网页做。  
+> 想让连接器代做：去 <https://github.com/settings/installations> → 找到该 App → Configure → 把 **Administration** 与 **Contents** 都改成 **Read and write** → Save。改完我可以接管后续。
 
 ### 方案 A —— 新建空仓库（推荐：最快，push 不用 --force）
 
-1. 打开 https://github.com/new
+1. 打开 <https://github.com/new>
 2. **Owner**：`<OWNER>`
 3. **Repository name**：`kwp-mirror`
 4. **Description**（可选）：`Deployment mirror of anthropics/knowledge-work-plugins`
@@ -55,7 +55,7 @@
 
 ### 方案 B —— Fork 上游（想保留上游历史、以后能同步上游更新）
 
-1. 打开 https://github.com/anthropics/knowledge-work-plugins/fork
+1. 打开 <https://github.com/anthropics/knowledge-work-plugins/fork>
 2. **Owner** 选 `<OWNER>`，**Repository name** 填 `kwp-mirror`
 3. 点 **Create fork**（几秒）
 4. **关键一步，别漏**：打开 `https://github.com/<OWNER>/kwp-mirror/actions`
@@ -76,7 +76,9 @@ git log --oneline -2                # 第二行应是上游最新提交（不是
 
 原理：`--soft` 只把 HEAD 挪到 `upstream/main`，不动工作树和暂存区。结果是一个 parent 为上游 main 的**增量提交**，push 是正常 fast-forward，不需要 `--force`。
 
-**验收**：`git log --oneline | wc -l` 大于 100（有上游历史）；`git status` 干净。
+|                            |                                        |
+| -------------------------- | -------------------------------------- |
+| **验收**：\`git log --oneline | wc -l` 大于 100（有上游历史）；`git status\` 干净。 |
 
 ### 方案 C —— 网页拖拽上传（别用）
 
@@ -86,7 +88,7 @@ git log --oneline -2                # 第二行应是上游最新提交（不是
 
 ## 第 2 项：push 权限（三选一，按省事排序）
 
-> ⚠️ **所有命令请在你自己的终端里跑**：Windows Terminal → 新建 Git Bash 标签（或 PowerShell）。
+> ⚠️ **所有命令请在你自己的终端里跑**：Windows Terminal → 新建 Git Bash 标签（或 PowerShell）。  
 > WorkBuddy 的沙箱 shell 是非交互的，GCM 弹窗弹不出来，`git push` 会一直挂着。
 
 ### 方案 1 —— GCM 浏览器登录（本机零配置，最推荐）
@@ -121,16 +123,16 @@ ssh-keygen -t ed25519 -C "clarkcai1919-ops-kwp" -f ~/.ssh/id_ed25519 -N ""
 cat ~/.ssh/id_ed25519.pub
 ```
 
-→ 复制输出的**一整行**（`ssh-ed25519 AAAA...... clarkcai1919-ops-kwp`）
-→ 浏览器打开 https://github.com/settings/ssh/new
+→ 复制输出的**一整行**（`ssh-ed25519 AAAA...... clarkcai1919-ops-kwp`）  
+→ 浏览器打开 <https://github.com/settings/ssh/new>
 
-| 字段 | 填什么 |
-|---|---|
-| Title | `workbuddy-nanjing`（随便，能认出是这台机器） |
-| Key type | `Authentication Key` |
-| Key | 粘贴整行 |
+| 字段       | 填什么                              |
+| -------- | -------------------------------- |
+| Title    | `workbuddy-nanjing`（随便，能认出是这台机器） |
+| Key type | `Authentication Key`             |
+| Key      | 粘贴整行                             |
 
-→ 点 **Add SSH key**
+→ 点 **Add SSH key**  
 → 验证：
 
 ```bash
@@ -154,14 +156,16 @@ git push -u origin main
 生成（二选一）：
 
 **Classic**（简单，推荐首次用）
-1. https://github.com/settings/tokens
+
+1. <https://github.com/settings/tokens>
 2. **Generate new token (classic)**
 3. Note：`kwp-deploy`；Expiration：`90 days`
 4. 勾选 **`repo`** + **`workflow`** ← 两个都必须
 5. Generate → 复制 `ghp_...`（**只显示一次**）
 
 **Fine-grained**（更小权限面）
-1. https://github.com/settings/personal-access-tokens/new
+
+1. <https://github.com/settings/personal-access-tokens/new>
 2. Repository access：`Only select repositories` → 选 `kwp-mirror`
 3. Repository permissions：
    - **Contents** → `Read and write`
@@ -180,11 +184,13 @@ git push -u origin main
 ```
 
 > **为什么必须有 workflow 权限**：本次提交包含 `.github/workflows/validate-plugins.yml` 等 6 个 workflow 文件。GitHub 硬规则：不带 workflow 权限的 PAT 不允许创建/更新 workflow 文件，报错原文：
+>
 > ```
 > refusing to allow a Personal Access Token to create or update workflow
 > `.github/workflows/validate-plugins.yml` without `workflow` scope
 > ```
-> 这就是我把 SSH 排在前面的原因——它没有这个坑。
+>
+> 这就是我把 SSH 排在前面的原因——它没有这个坑。  
 > ⚠️ 不要把 token 拼进 remote URL 后提交，也不要写进 DEPLOY.md，会进 git 历史。
 
 ---
@@ -193,9 +199,9 @@ git push -u origin main
 
 ### 决定 1：owner 用个人还是组织
 
-| 选项 | 前提 | 影响 |
-|---|---|---|
-| 个人账号 `<OWNER>` | 无 | 最省事；换号/交接时要迁仓库 |
+| 选项                    | 前提                  | 影响                                        |
+| --------------------- | ------------------- | ----------------------------------------- |
+| 个人账号 `<OWNER>`        | 无                   | 最省事；换号/交接时要迁仓库                            |
 | 组织（如 `estun-service`） | 你在该组织是 Owner，或被允许建仓 | 团队共同维护；组织的 Actions 策略/公开范围可能受限，需 Owner 放行 |
 
 **建议**：先个人跑通，团队要用再 Transfer 到组织（GitHub 支持仓库转移，历史不丢）。
@@ -211,32 +217,35 @@ git push -u origin main
 
 `name` 就是 `claude plugin marketplace add` 之后客户端认的**市场标识**。和上游同名会撞车（谁后加谁覆盖，`sales@knowledge-work-plugins` 指向不明）。
 
-| 选择 | 要不要改代码 | 安装命令 |
-|---|---|---|
-| **保持原样**（纯镜像） | 不改 | `claude plugin install sales@knowledge-work-plugins`（和官方同名） |
-| **改成本地标识**（推荐） | 改 `name` → `"kwp-mirror"`，`owner.name` → `"<OWNER>"` | `claude plugin install sales@kwp-mirror` |
+| 选择             | 要不要改代码                                               | 安装命令                                                        |
+| -------------- | ---------------------------------------------------- | ----------------------------------------------------------- |
+| **保持原样**（纯镜像）  | 不改                                                   | `claude plugin install sales@knowledge-work-plugins`（和官方同名） |
+| **改成本地标识**（推荐） | 改 `name` → `"kwp-mirror"`，`owner.name` → `"<OWNER>"` | `claude plugin install sales@kwp-mirror`                    |
 
 选"改"的话由我动手：改 2 行 → 跑一遍 `node .github/scripts/validate-plugins.mjs` 确认仍通过 → 提交。
 
 ### 决定 3：Public 还是 Private
 
-| | **Public**（建议） | Private |
-|---|---|---|
-| 别人安装 | `claude plugin marketplace add <OWNER>/<repo>` 直接可读 | 必须先 `gh auth login` 或配 token，否则读不到清单 |
-| Actions 额度 | 公开仓库不限 | 计入你的月度分钟数（本 CI 每次 <1 分钟，可忽略） |
-| 内容暴露 | 22 个插件、225 个 skill 全公开 | 仅你可见 |
-| 保密收益 | 内容本来就是上游 Apache-2.0 公开内容，**没有保密收益** | 反而给每个安装方加一道登录门槛 |
+|            | **Public**（建议）                                      | Private                              |
+| ---------- | --------------------------------------------------- | ------------------------------------ |
+| 别人安装       | `claude plugin marketplace add <OWNER>/<repo>` 直接可读 | 必须先 `gh auth login` 或配 token，否则读不到清单 |
+| Actions 额度 | 公开仓库不限                                              | 计入你的月度分钟数（本 CI 每次 <1 分钟，可忽略）         |
+| 内容暴露       | 22 个插件、225 个 skill 全公开                              | 仅你可见                                 |
+| 保密收益       | 内容本来就是上游 Apache-2.0 公开内容，**没有保密收益**                 | 反而给每个安装方加一道登录门槛                      |
 
 **建议 Public**。
 
 ### 联动 1：仓库名进了 remote
+
 仓库名一旦定下，`git remote` 必须跟着改：
+
 ```bash
 git remote set-url origin https://github.com/<OWNER>/<REPO>.git
 git remote -v      # 核对两行都对
 ```
 
 ### 联动 2：marketplace 的 name 进了安装命令
+
 改了 `marketplace.json` 的 `name`，所有安装命令里的 `@后面的部分`都要换。DEPLOY.md 第 4 节的示例命令我会同步更新。
 
 ---
@@ -280,22 +289,22 @@ claude plugin marketplace list      # 列表里出现该市场
 
 ## 卡住时对照表
 
-| 现象 | 原因 | 处理 |
-|---|---|---|
-| `! [rejected] main -> main (fetch first)` | 建仓时勾了 README/gitignore/license | `git pull --rebase origin main` 再 push；或删库重建（不勾任何框） |
-| `refusing to allow a Personal Access Token ... without 'workflow' scope` | PAT 缺 workflow 权限 | 换 SSH（方案 2），或重新生成带 `workflow` 的 token |
-| `remote: Repository not found` / `403` | owner 或仓库名拼错；token 未选中该私有仓库 | 回第 0 步核对 username；`git remote -v` 核对地址 |
-| GCM 窗口不弹、命令卡死 | 在非交互 shell 里跑 | 换 Windows Terminal 的 Git Bash 重跑 |
-| Actions 灰着不跑 | fork 仓库默认禁用 Actions | Actions 页点 "I understand my workflows..." |
-| 本地校验绿、远程 Actions 红 | push 漏文件（常见于点开头的目录） | 本地 `node .github/scripts/validate-plugins.mjs` 应通过；`git ls-files \| wc -l` 应 1287 |
-| `claude: command not found` | CLI 未安装 | `npm i -g @anthropic-ai/claude-code`，或跳过验收 ④ 改看 Actions 状态 |
+| 现象                                                                       | 原因                             | 处理                                                                                |
+| ------------------------------------------------------------------------ | ------------------------------ | --------------------------------------------------------------------------------- |
+| `! [rejected] main -> main (fetch first)`                                | 建仓时勾了 README/gitignore/license | `git pull --rebase origin main` 再 push；或删库重建（不勾任何框）                               |
+| `refusing to allow a Personal Access Token ... without 'workflow' scope` | PAT 缺 workflow 权限              | 换 SSH（方案 2），或重新生成带 `workflow` 的 token                                             |
+| `remote: Repository not found` / `403`                                   | owner 或仓库名拼错；token 未选中该私有仓库    | 回第 0 步核对 username；`git remote -v` 核对地址                                            |
+| GCM 窗口不弹、命令卡死                                                            | 在非交互 shell 里跑                  | 换 Windows Terminal 的 Git Bash 重跑                                                  |
+| Actions 灰着不跑                                                             | fork 仓库默认禁用 Actions            | Actions 页点 "I understand my workflows..."                                         |
+| 本地校验绿、远程 Actions 红                                                       | push 漏文件（常见于点开头的目录）            | 本地 `node .github/scripts/validate-plugins.mjs` 应通过；`git ls-files \| wc -l` 应 1287 |
+| `claude: command not found`                                              | CLI 未安装                        | `npm i -g @anthropic-ai/claude-code`，或跳过验收 ④ 改看 Actions 状态                        |
 
 ---
 
 ## 三行速览（做完打勾）
 
-- [ ] 第 0 步：确认 `OWNER`
-- [ ] 第 1 项：建仓（A 空仓库 / B fork + enable Actions）→ 拿到 `https://github.com/<OWNER>/<REPO>.git`
+- [x] 第 0 步：确认 `OWNER`
+- [x] 第 1 项：建仓（A 空仓库 / B fork + enable Actions）→ 拿到 `https://github.com/<OWNER>/<REPO>.git`
 - [ ] 第 2 项：push 成功（GCM 浏览器登录 / SSH / PAT 三选一）→ `git status` 显示 up to date
 - [ ] 第 3 项：确认 owner、仓库名（含是否改 marketplace name）、Public
 - [ ] §4：①②③④ 全绿

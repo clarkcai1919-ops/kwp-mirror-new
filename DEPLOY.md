@@ -5,6 +5,29 @@
 
 ---
 
+## 0. 部署状态：已上线（2026-11-18 22:00）
+
+| 项 | 实际值 |
+|---|---|
+| 目标仓库 | <https://github.com/clarkcai1919-ops/kwp-mirror-new>（public，默认分支 main） |
+| 首个 commit | `ef7bf2d` — 1287 个文件，本地 HEAD 与远程 HEAD 一致 |
+| 认证方式 | SSH ed25519（`~/.ssh/id_ed25519`，无 passphrase），公钥已挂到 GitHub 账号 |
+| CI 结果 | `Validate Plugins` 在 push 后 30 秒内跑完 → **success** |
+| 清单可读 | `raw.githubusercontent.com/.../marketplace.json` → HTTP 200，68192 B，123 条插件 |
+
+第 5 节三项必补项的完成情况：
+
+- [x] **建仓权限** — `clarkcai1919-ops/kwp-mirror-new`，空仓库创建（未勾 README，因此无需 `pull --rebase`）
+- [x] **push 权限** — SSH 认证通过：`Hi clarkcai1919-ops! You've successfully authenticated`
+- [x] **账号/仓库名确认** — owner=`clarkcai1919-ops`，repo=`kwp-mirror-new`，可见性 Public
+
+尚未做（不阻塞上线）：
+
+- `claude` CLI 本机未安装，客户端侧 `plugin marketplace add` 未实测；可用 npm 安装后补验
+- `marketplace.json` 的 `name` 仍为 `knowledge-work-plugins`（与上游同名），是否改成本地标识（如 `kwp-mirror`）待定
+
+---
+
 ## 1. 先明确一件事：这个仓库不是"网站/服务"
 
 它没有 `package.json`、没有 Dockerfile、没有构建步骤。整个仓库是 **123 条插件市场清单 + 1173 个 Markdown 技能文件**，运行时由 Claude Code / Cowork 客户端读取。
